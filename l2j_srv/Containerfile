@@ -1,0 +1,27 @@
+FROM openjdk:14-alpine
+
+COPY files/run.sh /scripts/run.sh
+
+RUN apk update \ 
+    && apk --no-cache add maven mariadb-client unzip git \
+    && mkdir -p /opt/l2j/server && mkdir -p /opt/l2j/target && cd /opt/l2j/target/ \
+    && git clone --branch master --single-branch https://git@bitbucket.org/l2jserver/l2j-server-cli.git cli \
+    && git clone --branch master --single-branch https://git@bitbucket.org/l2jserver/l2j-server-login.git login \
+    && git clone --branch develop --single-branch https://git@bitbucket.org/l2jserver/l2j-server-game.git game \
+    && git clone --branch develop --single-branch https://git@bitbucket.org/l2jserver/l2j-server-datapack.git datapack \
+    && cd /opt/l2j/target/cli && mvn install \
+    && cd /opt/l2j/target/login && mvn install \
+    && cd /opt/l2j/target/game && mvn install \
+    && cd /opt/l2j/target/datapack && mvn install \
+    && unzip /opt/l2j/target/cli/target/*.zip -d /opt/l2j/server/cli \
+    && unzip /opt/l2j/target/login/target/*.zip -d /opt/l2j/server/login \
+    && unzip /opt/l2j/target/game/target/*.zip -d /opt/l2j/server/game \
+    && unzip /opt/l2j/target/datapack/target/*.zip -d /opt/l2j/server/game \
+    && rm -rf /opt/l2j/target/ && apk del maven git \
+    && chmod +x /opt/l2j/server/cli/*.sh /opt/l2j/server/game/*.sh /opt/l2j/server/login/*.sh /scripts/run.sh 
+
+WORKDIR /opt/l2j/server
+
+EXPOSE 7777 2106
+
+ENTRYPOINT [ "/scripts/run.sh" ]
